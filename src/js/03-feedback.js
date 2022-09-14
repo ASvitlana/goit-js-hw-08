@@ -1,45 +1,39 @@
-import { throttle } from 'lodash';
 
-const form = document.querySelector('.feedback-form');
-const inputedEmail = document.querySelector('input');
-const inputedMessage = document.querySelector('textarea');
+import throttle from 'lodash.throttle';
+
+
+const refs = {
+    form: document.querySelector('.feedback-form'),
+    inputedEmail: document.querySelector('input'),
+    inputedMessage: document.querySelector('textarea'),
+};
+
 const LOCALSTORAGE_KEY = 'feedback-form-state';
-// console.dir(form)
 
-updateOutput();
+const formData = {};
 
-form.addEventListener('input', throttle(saveInputedText, 500));
+refs.form.addEventListener('submit', onFormSubmit);
+refs.form.addEventListener('input', throttle(onTextInput, 500));
 
-function saveInputedText(event) {
-    event.preventDefault();
-    const objectToSave = { email: inputedEmail.value, message: inputedMessage.value };
-    localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(objectToSave));
-    updateOutput();
-    // form.reset();
+populateInputedText();
+
+function onTextInput(event) {
+    // const formData = { email: refs.inputedEmail.value, message: refs.inputedMessage.value };
+    formData[event.target.name] = event.target.value;
+    localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(formData));
 };
 
-form.addEventListener('submit', event => {
+function onFormSubmit(event) {
     event.preventDefault();
-    console.log({ email: inputedEmail.value, message: inputedMessage.value });
-    form.reset();
+    console.log(JSON.parse(localStorage.getItem(LOCALSTORAGE_KEY)));
+    event.target.reset();
     localStorage.removeItem(LOCALSTORAGE_KEY);
-});
-
-function updateOutput() {
-  output.textContent = localStorage.getItem(LOCALSTORAGE_KEY) || "";
 };
 
-const load = key => {
-    try {
-        const serializedState = localStorage.getItem(key);
-        return serializedState === null ? undefined : JSON.parse(serializedState);
-    } catch (error) {
-        console.error('Get state error: ', error.message);
+function populateInputedText(event) {
+    const savedMessages = localStorage.getItem(LOCALSTORAGE_KEY);
+
+    if(savedMessages) {
+        formData[event.target.name] = event.target.value;
     }
-};
-
-const storageData = load(LOCALSTORAGE_KEY);
-    if (storageData) {
-        inputedEmail.value = storageData.email;
-        inputedMessage.value = storageData.message;
 }

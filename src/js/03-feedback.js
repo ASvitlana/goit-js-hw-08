@@ -1,95 +1,70 @@
-
-// import throttle from 'lodash.throttle';
-
-// const form = document.querySelector('.feedback-form');
-
-// const LOCALSTORAGE_KEY = 'feedback-form-state';
-
-// // const formData = {};
-
-// form.addEventListener('submit', onFormSubmit);
-// form.addEventListener('input', throttle(onTextInput, 500));
-
-// populateInputedText();
-
-// function onTextInput(event) {
-//     let formData = localStorage.getItem(LOCALSTORAGE_KEY);
-//     formData = formData ? JSON.parse(formData) : {}; 
-//     formData[event.target.name] = event.target.value;
-//     localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(formData));
-// };
-
-// function onFormSubmit(event) {
-//     event.preventDefault();
-    
-//     console.log(JSON.parse(localStorage.getItem(LOCALSTORAGE_KEY)));
-//     event.target.reset();
-//     localStorage.removeItem(LOCALSTORAGE_KEY);
-// };
-
-// function populateInputedText() {
-//     let savedMessages = localStorage.getItem(LOCALSTORAGE_KEY);
-
-//     if(savedMessages) {
-//         savedMessages = JSON.parse(savedMessages);
-//         Object.entries(savedMessages).forEach(([name, value]) => {
-//             form.elements[name].value = value;
-//         })
-//     }
-// }
-
-
-
-
-
-
 import throttle from 'lodash.throttle';
 
-const form = document.querySelector('.feedback-form');
+const formRef = document.querySelector('.feedback-form');
+const LOCAL_STORAGE_KEY = 'feedback-form-state';
 
-const LOCALSTORAGE_KEY = 'feedback-form-state';
-
-let formData = {};
-
-form.addEventListener('submit', onFormSubmit);
-form.addEventListener('input', throttle(onTextInput, 500));
-
-function storage() {
+const save = (key, value) => {
     try {
-        let formData = localStorage.getItem(LOCALSTORAGE_KEY); 
-        return formData ? JSON.parse(formData) : {};
+        const serializedState = JSON.stringify(value);
+        localStorage.setItem(key, serializedState);
+    } catch (error) {
+        console.error("Set state error: ", error.message);
     }
-    catch(error) {
-        console.error('Get state error: ', error.message);
-    }
-}
-
-populateInputedText();
-
-function onTextInput(event) {
-    // let formData = localStorage.getItem(LOCALSTORAGE_KEY);
-    // formData = formData ? JSON.parse(formData) : {}; 
-    storage(LOCALSTORAGE_KEY);
-    formData[event.target.name] = event.target.value;
-    localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(formData));
 };
 
-function onFormSubmit(event) {
-    event.preventDefault();
+const load = key => {
+    try {
+        const serializedState = localStorage.getItem(key);
+        return serializedState === null ? undefined : JSON.parse(serializedState);
+    } catch (error) {
+        console.error("Get state error: ", error.message);
+    }
+};
+
+const remove = key => {
+    try {
+        localStorage.removeItem(key);
+        
+    } catch (error) {
+        console.error("Get state error: ", error.message);
+    }
+};
+
+
+initPage();
+
+const onFormInput = (event) => {
+    const {name, value} = event.target;
+    let saveData = load(LOCAL_STORAGE_KEY);
+    saveData = saveData ? saveData : {};
+    saveData[name] = value;
+    save(LOCAL_STORAGE_KEY, saveData);
+};
+
+const throttledOnFormInput = throttle(onFormInput, 500);
+formRef.addEventListener('input', throttledOnFormInput);
+
+function initPage() {
+    const saveData = load(LOCAL_STORAGE_KEY);
+
+    if(!saveData) {
+        return;
+    }
     
-    console.log(JSON.parse(localStorage.getItem(LOCALSTORAGE_KEY)));
-    event.target.reset();
-    localStorage.removeItem(LOCALSTORAGE_KEY);
+    Object.entries(saveData).forEach(([name, value]) => {
+        formRef.elements[name].value = value;
+    })
 };
 
-function populateInputedText() {
-    // let formData = localStorage.getItem(LOCALSTORAGE_KEY);
-    // formData = formData ? JSON.parse(formData) : {}; 
-    storage(LOCALSTORAGE_KEY);
-    Object.entries(formData).forEach(([name, value]) => {
-        form.elements[name].value = value;
-    })
-}
+const handleSubmit = event => {
+    event.preventDefault();
+    const {
+        elements: {email, message},
+    } = event.currentTarget;
+    console.log({email: email.value, message: message.value});
+    event.currentTarget.reset();
+    remove(LOCAL_STORAGE_KEY);
+};
 
-
+formRef.addEventListener('submit', handleSubmit);
 
